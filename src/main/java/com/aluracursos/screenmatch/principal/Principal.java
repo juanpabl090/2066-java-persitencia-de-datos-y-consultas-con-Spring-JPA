@@ -15,6 +15,7 @@ public class Principal {
     private final ConvierteDatos conversor = new ConvierteDatos();
     private final List<DatosSerie> datosSerie = new ArrayList<>();
     private final SerieRepository serieRepository;
+    private Optional<Serie> serieBuscada;
     private List<Serie> series;
 
     public Principal(SerieRepository serieRepository) {
@@ -30,6 +31,10 @@ public class Principal {
                      3 - Mostrar series buscadas
                      4 - Mostrar series por titulo
                      5 - Mostrar top 5 series mejor evaluadas
+                     6 - buscar Serie Por Categoria
+                     7 - buscar Serie Por Temporada Y Evaluacion
+                     8 - buscar Episodio Por Nombre
+                     9 - buscar top 5 episodios por serie
                      \s
                      0 - Salir
                     \s""";
@@ -55,6 +60,15 @@ public class Principal {
                     break;
                 case 6:
                     buscarSeriePorCategoria();
+                    break;
+                case 7:
+                    buscarSeriePorTemporadaYEvaluacion();
+                    break;
+                case 8:
+                    buscarEpisodioPorNombre();
+                    break;
+                case 9:
+                    top5EpisodioPorSerie();
                     break;
                 case 0:
                     System.out.println("Cerrando la aplicación...");
@@ -122,7 +136,7 @@ public class Principal {
         System.out.println("Escribe el nombre de la serie que deseas buscar");
         var nombreSerie = teclado.nextLine();
 
-        Optional<Serie> serieBuscada = serieRepository.findByTituloContainsIgnoreCase(nombreSerie);
+        serieBuscada = serieRepository.findByTituloContainsIgnoreCase(nombreSerie);
 
         if (serieBuscada.isPresent()) {
             System.out.println("La serie buscada es:" + serieBuscada.get());
@@ -142,5 +156,46 @@ public class Principal {
         var genero = teclado.nextLine();
         var categoria = Categoria.fromSpanish(genero);
         List<Serie> seriesPorCategoria = serieRepository.findByGenero(categoria);
+        System.out.println("Las series de la categoria: " + genero);
+        seriesPorCategoria.forEach(System.out::println);
     }
+
+    private void buscarSeriePorTemporadaYEvaluacion() {
+        System.out.println("Ingresa el numero de temporadas de la serie");
+        var numTemp = teclado.nextInt();
+        teclado.nextLine();
+        System.out.println("Ingresa la calificacion de la serie");
+        Double calSer = teclado.nextDouble();
+        teclado.nextLine();
+
+        List<Serie> seriesPorTemporadaYCalificacion = serieRepository.findBytotalTemporadasAndEvaluacion(numTemp, calSer);
+        if (seriesPorTemporadaYCalificacion.isEmpty()) {
+            System.out.println("No se encontraron coincidencias");
+        } else {
+            seriesPorTemporadaYCalificacion.forEach(series ->
+                    System.out.println("Serie: " + series.getTitulo()
+                            + ", Numero de temporadas: " + series.getTotalTemporadas()
+                            + ", Calificacion: " + series.getEvaluacion()
+                    ));
+        }
+    }
+
+    private void buscarEpisodioPorNombre() {
+        System.out.println("Escribe el nombre del episodio que deseas buscar");
+        var nombreEpisodio = teclado.nextLine();
+        List<Episodio> episodiosEncontrados = serieRepository.episodiosPorNombre(nombreEpisodio);
+        episodiosEncontrados.forEach(episodio -> System.out.printf("Serie: %s\nEpisodio: %s\nTemporada: %s\nEvaluacion: %s\n",
+                episodio.getSerie(), episodio.getTitulo(), episodio.getTemporada(), episodio.getEvaluacion()));
+    }
+
+    private void top5EpisodioPorSerie() {
+        buscarSeriePorTitulo();
+        if (serieBuscada.isPresent()) {
+            Serie serie = serieBuscada.get();
+            List<Episodio> episodios = serieRepository.top5Episodios(serie);
+            episodios.forEach(episodio -> System.out.printf("Serie: %s - Episodio: %s - Temporada: %s - Evaluacion: %s \n",
+                    episodio.getSerie().getTitulo(), episodio.getTitulo(), episodio.getTemporada(), episodio.getEvaluacion()));
+        }
+    }
+
 }
