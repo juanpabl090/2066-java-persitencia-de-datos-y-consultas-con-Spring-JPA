@@ -38,7 +38,6 @@ public class Episodio {
         } catch (DateTimeParseException e) {
             this.fechaDeLanzamiento = null;
         }
-
     }
 
     public Integer getTemporada() {
